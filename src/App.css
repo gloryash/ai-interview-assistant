@@ -1,0 +1,369 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0f0f1a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.settings-btn {
+  padding: 8px 16px;
+  background: #333;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.spacer {
+  flex: 0;
+}
+
+.bottom-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.control-panel {
+  background: #1a1a2e;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.status {
+  margin-bottom: 16px;
+  color: #4a9eff;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.buttons button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #4a9eff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.buttons button:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+
+.input-area {
+  display: flex;
+  gap: 12px;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 14px;
+}
+
+.input-area button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #4a9eff;
+  color: #fff;
+  cursor: pointer;
+}
+
+.input-area button:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+
+.sidebar {
+  width: 350px;
+  padding: 20px;
+  border-left: 1px solid #333;
+  overflow-y: auto;
+  /* 隐藏滚动条但保留滚动功能 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 场景选择器 */
+.scenario-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-selector h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
+
+.scenario-list {
+  display: flex;
+  gap: 8px;
+}
+
+.scenario-item {
+  padding: 6px 12px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.scenario-item.active {
+  background: #4a9eff;
+  border-color: #4a9eff;
+}
+
+/* 访谈记录面板 */
+.transcript-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+
+.transcript-panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #888;
+}
+
+.transcript-panel .empty {
+  color: #666;
+  font-size: 13px;
+}
+
+.transcript-messages {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.transcript-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.transcript-msg {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.transcript-msg .role {
+  color: #4a9eff;
+  margin-right: 4px;
+}
+
+.transcript-msg.user .role {
+  color: #4aff9e;
+}
+
+/* 文档面板 */
+.document-panel {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+
+.document-panel h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #888;
+}
+
+.document-panel > button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #4a9eff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.document-panel > button:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+
+.document-list {
+  margin-top: 12px;
+}
+
+.view-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #4aff9e;
+  color: #000;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.document-item .doc-name {
+  font-size: 13px;
+}
+
+.document-item button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* 结束采访按钮 */
+.stop-btn {
+  background: #ff4a4a !important;
+}
+
+.stop-btn:hover {
+  background: #ff6b6b !important;
+}
+
+/* 生成进度状态 */
+.generating-status {
+  padding: 12px 20px;
+  background: rgba(74, 158, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  color: #4a9eff;
+  font-size: 14px;
+}
+
+.thinking-icon {
+  margin-right: 8px;
+}
+
+/* 已生成文档列表 */
+.generated-docs-list {
+  padding: 16px 20px;
+  background: rgba(74, 255, 158, 0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.generated-docs-list h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #4aff9e;
+}
+
+.generated-doc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.doc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.doc-actions button {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.doc-actions button:first-child {
+  background: #333;
+  color: #fff;
+}
+
+.doc-actions button:last-child {
+  background: #4a9eff;
+  color: #fff;
+}
+
+/* 可拖动分隔线 */
+.resizable-divider {
+  width: 4px;
+  background: #333;
+  cursor: col-resize;
+  transition: background 0.2s;
+}
+
+.resizable-divider:hover,
+.resizable-divider.dragging {
+  background: #4a9eff;
+}
