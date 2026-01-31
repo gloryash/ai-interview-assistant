@@ -37,8 +37,8 @@ export interface AppConfig {
 }
 
 const STORAGE_KEY = 'voice-chat-config';
-const DEFAULT_PROVIDER: LLMProvider = 'claude';
-const DEFAULT_CLAUDE_MODEL = 'claude-opus-4-5-20251101';
+const DEFAULT_PROVIDER: LLMProvider = 'dashscope';
+const DEFAULT_MODEL = 'qwen-plus';
 const ENV_CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY || '';
 const ENV_DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY || '';
 
@@ -46,13 +46,13 @@ const DEFAULT_CONFIG: AppConfig = {
   claudeApiKey: ENV_CLAUDE_API_KEY,
   dashscopeApiKey: ENV_DASHSCOPE_API_KEY,
   interviewProvider: DEFAULT_PROVIDER,
-  interviewModel: DEFAULT_CLAUDE_MODEL,
+  interviewModel: DEFAULT_MODEL,
   prdProvider: DEFAULT_PROVIDER,
-  prdModel: DEFAULT_CLAUDE_MODEL,
+  prdModel: DEFAULT_MODEL,
   personaProvider: DEFAULT_PROVIDER,
-  personaModel: DEFAULT_CLAUDE_MODEL,
+  personaModel: DEFAULT_MODEL,
   progressProvider: DEFAULT_PROVIDER,
-  progressModel: DEFAULT_CLAUDE_MODEL,
+  progressModel: DEFAULT_MODEL,
   voiceId: 'longxiaochun',
   systemPrompt: '你是一个友好的AI助手，请用简洁的语言回答用户的问题。',
   voiceDisturbEnabled: true,
