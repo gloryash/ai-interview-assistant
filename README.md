@@ -1,128 +1,202 @@
 # AI 访谈助手 (AI Interview Assistant)
 
-一个基于 React + TypeScript 的 AI 语音访谈应用，通过语音对话帮助用户将模糊的想法转化为结构化文档。
+一个基于语音对话的 AI 访谈应用，通过自然对话帮助用户将想法转化为结构化文档。
 
-## 核心特性
+## 功能介绍
 
-- **语音对话** - 实时语音识别 + 语音合成 + 语音打断
-- **AI 引导访谈** - AI 主动提问，引导用户表达需求
-- **多场景支持** - Prompt 驱动架构，一套代码支持多种访谈场景
-- **自动生成文档** - 访谈结束后自动生成 PRD、用户画像等文档
+### 两种访谈场景
 
-## 功能特性
+| 场景 | 说明 | 生成文档 |
+|------|------|----------|
+| **AI 产品访谈** | AI 引导你描述产品想法，自动生成需求文档 | PRD、用户画像 |
+| **AI 复盘** | AI 引导你回顾一天的经历，生成复盘记录 | 复盘文档 |
 
-- **实时语音识别 (ASR)** - 使用阿里云 Paraformer 实时语音识别
-- **语音合成 (TTS)** - 使用阿里云 CosyVoice 语音合成
-- **语音活动检测 (VAD)** - 自动检测用户说话开始和结束
-- **语音打断** - 用户说话时自动停止 AI 回复
-- **场景切换** - 支持多种访谈场景（产品访谈、助教复盘等）
-- **文档生成** - 自动生成 PRD、用户画像等结构化文档
-- **文档导出** - 支持 Markdown 格式导出
+### 核心特性
 
-## 技术栈
+- **语音对话** - 像聊天一样说话，AI 自动识别并回复
+- **语音打断** - 随时打断 AI 说话，继续你的表达
+- **实时进度** - 显示信息收集进度（AI产品访谈场景）
+- **自动生成文档** - 访谈结束后一键生成结构化文档
+- **飞书上传** - 一键上传文档到飞书云空间
 
-- React 19 + TypeScript
-- Vite 7
-- Web Audio API (AudioWorklet)
-- WebSocket (实时通信)
-- 阿里云 DashScope API
+---
 
 ## 快速开始
 
-### 安装依赖
+### 第一步：安装依赖
 
 ```bash
 npm install
 ```
 
-### 开发模式
+### 第二步：启动应用
 
 ```bash
 npm run dev
 ```
 
-### 构建生产版本
+浏览器会自动打开 http://localhost:5173
+
+### 第三步：配置 API Key
+
+1. 首次打开会弹出设置面板
+2. 填入你的**阿里百炼 API Key**（[获取地址](https://bailian.console.aliyun.com/)）
+3. 点击保存
+
+### 第四步：开始访谈
+
+1. 选择访谈场景（AI产品访谈 / AI复盘）
+2. 点击「开始」按钮
+3. 对着麦克风说话，AI 会自动回应
+4. 访谈结束后点击「结束」
+5. 点击「生成文档」获取结构化文档
+
+---
+
+## 飞书上传功能（可选）
+
+如果你想把生成的文档上传到飞书，需要额外配置：
+
+### 1. 创建飞书应用
+
+1. 访问 [飞书开放平台](https://open.feishu.cn)
+2. 创建一个企业自建应用
+3. 在「权限管理」中开启以下权限：
+   - `docx:document` - 查看、编辑和管理云文档
+   - `wiki:wiki` - 查看、编辑和管理知识库（可选）
+4. 发布应用
+
+### 2. 配置飞书凭证
+
+复制配置文件模板：
 
 ```bash
-npm run build
+cp feishu.config.example.json feishu.config.json
 ```
 
-## 配置说明
+编辑 `feishu.config.json`，填入你的应用信息：
 
-首次运行时会弹出设置面板，需要配置：
-
-| 配置项 | 说明 |
-|--------|------|
-| API Key | 阿里百炼 API Key |
-| LLM 模型 | qwen-plus / qwen-turbo / qwen-max |
-| TTS 语音 | 龙小淳 / 龙婉 / 龙悦 / Stella |
-| 系统人设 | LLM 的系统提示词 |
-| 语音打断 | 是否启用语音打断功能 |
-
-## 项目结构
-
-```
-src/
-├── components/          # UI 组件
-│   ├── CenterChat.tsx   # 中间对话面板
-│   ├── ChatHistory.tsx  # 右侧对话记录
-│   └── SettingsPanel.tsx # 设置面板
-├── hooks/               # React Hooks
-│   ├── useRealtimeVoiceChat.ts  # 主要对话逻辑
-│   ├── useVoiceInteraction.ts   # 语音交互
-│   ├── useAudioRecorder.ts      # 录音
-│   ├── useAudioPlayer.ts        # 播放
-│   ├── useASR.ts                # 语音识别
-│   └── useTTS.ts                # 语音合成
-├── services/            # 服务层
-│   ├── audio/           # 音频处理
-│   ├── asr/             # ASR 服务
-│   ├── tts/             # TTS 服务
-│   ├── chat/            # LLM 对话
-│   └── voice/           # VAD 等
-├── stores/              # 状态管理
-└── types/               # TypeScript 类型
-public/
-├── workers/             # Web Workers
-│   ├── audioProcessor.js    # 录音处理
-│   ├── pcmPlayerWorklet.js  # 播放处理
-│   └── asrWorker.js         # ASR Worker
-└── js/
-    └── paraformerRealtimeApi.js  # ASR API
+```json
+{
+  "appId": "你的应用ID",
+  "appSecret": "你的应用密钥",
+  "spaceId": "知识库空间ID（可选）"
+}
 ```
 
-## 浏览器兼容性
+### 3. 启动飞书服务
+
+```bash
+npm run feishu
+```
+
+### 4. 上传文档
+
+生成文档后，点击「上传飞书」按钮即可。
+
+---
+
+## 设置说明
+
+点击右上角齿轮图标打开设置面板：
+
+| 设置项 | 说明 | 推荐值 |
+|--------|------|--------|
+| API Key | 阿里百炼 API Key | 必填 |
+| LLM 模型 | AI 对话模型 | qwen-plus |
+| TTS 语音 | AI 说话的声音 | 根据喜好选择 |
+| 语音打断 | 是否允许打断 AI 说话 | 开启 |
+
+---
+
+## 常见问题
+
+### Q: 麦克风没有声音？
+
+1. 确保浏览器已授权麦克风权限
+2. 检查系统麦克风设置
+3. 使用 Chrome 浏览器效果最佳
+
+### Q: API Key 在哪里获取？
+
+1. 访问 [阿里云百炼](https://bailian.console.aliyun.com/)
+2. 注册/登录账号
+3. 在控制台创建 API Key
+
+### Q: 飞书上传失败？
+
+1. 确保飞书服务已启动（`npm run feishu`）
+2. 检查 `feishu.config.json` 配置是否正确
+3. 确保应用权限已开启
+
+### Q: 支持哪些浏览器？
 
 | 浏览器 | 最低版本 |
 |--------|----------|
 | Chrome | 66+ |
+| Edge | 79+ |
 | Firefox | 76+ |
 | Safari | 14.1+ |
-| Edge | 79+ |
 
-## 注意事项
+---
 
-- 需要 HTTPS 或 localhost 环境（麦克风权限要求）
-- 需要用户授权麦克风权限
-- 依赖网络连接（调用云端 API）
+## 项目结构
+
+```
+├── src/                    # 前端源码
+│   ├── components/         # UI 组件
+│   ├── hooks/              # React Hooks
+│   ├── services/           # 服务层（ASR/TTS/LLM）
+│   ├── config/scenarios/   # 访谈场景配置
+│   └── stores/             # 状态管理
+├── server/                 # 后端服务
+│   └── feishu/             # 飞书上传服务
+├── public/                 # 静态资源
+│   └── workers/            # Web Workers
+├── docs/                   # 项目文档
+└── feishu.config.json      # 飞书配置（需自行创建）
+```
+
+---
+
+## 开发命令
+
+```bash
+# 启动开发服务器
+npm run dev
+
+# 启动飞书上传服务
+npm run feishu
+
+# 构建生产版本
+npm run build
+
+# 代码检查
+npm run lint
+```
+
+---
+
+## 技术栈
+
+- **前端**: React 19 + TypeScript + Vite 7
+- **语音识别**: 阿里云 Paraformer (WebSocket)
+- **语音合成**: 阿里云 CosyVoice
+- **AI 对话**: 阿里云通义千问
+- **飞书集成**: 飞书开放 API
+
+---
 
 ## 文档
 
 详细文档请查看 `docs/` 目录：
 
-### 产品文档
 - [用户画像](docs/01-用户画像.md)
 - [产品需求文档](docs/02-产品需求文档.md)
-
-### 技术文档
 - [模块设计文档](docs/03-模块设计文档.md)
-- [系统架构图](docs/04-系统架构图.md)
-- [Prompt驱动架构设计](docs/05-Prompt驱动架构设计.md)
+- [场景扩展指南](docs/06-场景扩展指南.md)
 
-### 扩展指南
-- [场景扩展指南](docs/06-场景扩展指南.md) - 如何添加新的访谈场景
-- [文档生成机制](docs/07-文档生成机制.md) - 文档生成原理
-- [项目自身PRD](docs/08-项目自身PRD.md) - 本项目的PRD
+---
 
 ## License
 

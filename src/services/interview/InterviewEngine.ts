@@ -8,7 +8,7 @@ import { InterviewStateMachine, InterviewStage } from './InterviewStateMachine';
  */
 export interface InterviewEngineConfig {
   scenario: ScenarioConfig;
-  chatProvider: ChatProvider;
+  chatProvider?: ChatProvider;
   onStageChange?: (stage: InterviewStage) => void;
   onTranscriptUpdate?: (transcript: InterviewTranscript) => void;
 }
@@ -93,6 +93,19 @@ export class InterviewEngine {
     };
     this.transcript.messages.push(message);
     this.config.onTranscriptUpdate?.(this.transcript);
+  }
+
+  /**
+   * 更新最后一条用户消息（用于语音识别实时修正）
+   */
+  updateLastUserMessage(content: string): void {
+    const last = this.transcript.messages[this.transcript.messages.length - 1];
+    if (last && last.role === 'user') {
+      last.content = content;
+      this.config.onTranscriptUpdate?.(this.transcript);
+      return;
+    }
+    this.addUserMessage(content);
   }
 
   /**

@@ -43,6 +43,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions) {
   const onVoiceDetectedRef = useRef(onVoiceDetected);
   const onFinalTextRef = useRef(onFinalText);
   const onPartialTextRef = useRef(onPartialText);
+  const pauseNewRecordingRef = useRef(false);
 
   voiceDisturbEnabledRef.current = voiceDisturbEnabled;
   onVoiceDetectedRef.current = onVoiceDetected;
@@ -95,6 +96,10 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions) {
 
       if (speechScore > threshold && lastSamplesRef.current.length > 1) {
         if (!isRecordingRef.current) {
+          // 如果暂停了新录音，不开始新的 ASR 会话
+          if (pauseNewRecordingRef.current) {
+            return;
+          }
           if (voiceDisturbEnabledRef.current) {
             onVoiceDetectedRef.current?.();
           }
@@ -153,11 +158,16 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions) {
     speakingStartTimeRef.current = Date.now();
   }, []);
 
+  const setPauseNewRecording = useCallback((pause: boolean) => {
+    pauseNewRecordingRef.current = pause;
+  }, []);
+
   return {
     state,
     setState,
     startListening,
     stopListening,
     notifySpeakingStart,
+    setPauseNewRecording,
   };
 }

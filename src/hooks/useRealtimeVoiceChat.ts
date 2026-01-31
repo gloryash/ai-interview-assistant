@@ -32,6 +32,7 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const sseStartRef = useRef(true);
+  const setPauseNewRecordingRef = useRef<((pause: boolean) => void) | null>(null);
 
   const audioPlayer = useAudioPlayer(16000);
   const tts = useTTS();
@@ -75,15 +76,17 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
         });
 
         let ttsReady = false;
-        try {
-          await tts.connect(apiKey, voiceId, audioPlayer.pushPCM, () => {
-            audioPlayer.sendTtsFinishedMsg();
-            onTTSFinished?.();
-          });
-          ttsReady = true;
-        } catch (error) {
-          console.error('TTS connect failed', error);
-          alert('语音服务连接失败');
+        if (apiKey) {
+          try {
+            await tts.connect(apiKey, voiceId, audioPlayer.pushPCM, () => {
+              audioPlayer.sendTtsFinishedMsg();
+              onTTSFinished?.();
+            });
+            ttsReady = true;
+          } catch (error) {
+            console.error('TTS connect failed', error);
+            alert('语音服务连接失败');
+          }
         }
 
         abortRef.current?.abort();
@@ -104,6 +107,10 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
             if (ttsReady) {
               try {
                 tts.sendText(chunk.text);
+                // AI 开始说话，如果打断功能开启，恢复 ASR 录音
+                if (sseStartRef.current && voiceDisturbEnabled) {
+                  setPauseNewRecordingRef.current?.(false);
+                }
               } catch {
                 ttsReady = false;
               }
@@ -134,6 +141,8 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
         messageCallbacks?.onUpdateUserMessage?.(text);
         setIsRecognizing(false);
       }
+      // 暂停新的 ASR 录音，防止用户连续发送多条消息
+      voiceInteraction.setPauseNewRecording(true);
       sendTextMessage(text, true);
       voiceInteraction.setState(VoiceState.IDLE);
     },
@@ -153,6 +162,9 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
       tts.close();
     },
   });
+
+  // 将 setPauseNewRecording 存储到 ref，供 sendTextMessage 使用
+  setPauseNewRecordingRef.current = voiceInteraction.setPauseNewRecording;
 
   return {
     sending,

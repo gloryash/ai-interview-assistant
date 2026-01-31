@@ -9,6 +9,24 @@ export interface TranscriptMessage {
 }
 
 /**
+ * 信息收集进度项
+ */
+export interface InfoProgressItem {
+  id: string;
+  label: string;
+  weight: number;
+  collected: boolean;
+}
+
+/**
+ * 信息收集进度
+ */
+export interface InfoProgress {
+  items: InfoProgressItem[];
+  percentage: number;
+}
+
+/**
  * 访谈记录
  */
 export interface InterviewTranscript {

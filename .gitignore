@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Feishu config (contains secrets)
+feishu.config.json
+
+# Temp files
+file1.txt
+file2.txt
+file3.txt
+
+# Claude memory
+.claude/
+
+# Cursor
+.cursorindexingignore
+.specstory/

@@ -1,4 +1,5 @@
 import { aiInterviewScenario } from './ai-interview';
+import { aiDailyReflectionScenario } from './ai-daily-reflection';
 import type { ScenarioConfig } from '../../types/scenario';
 
 /**
@@ -6,6 +7,7 @@ import type { ScenarioConfig } from '../../types/scenario';
  */
 export const scenarios: Record<string, ScenarioConfig> = {
   'ai-interview': aiInterviewScenario,
+  'ai-daily-reflection': aiDailyReflectionScenario,
 };
 
 /**

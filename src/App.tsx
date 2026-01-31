@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useRealtimeVoiceChat } from './hooks/useRealtimeVoiceChat';
 import { useInterview } from './hooks/useInterview';
-import { DashScopeChatProvider } from './services/chat/DashScopeChatProvider';
+import { createChatProvider } from './services/chat/chatProviderFactory';
 import { loadConfig, saveConfig, type AppConfig } from './stores/config';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ChatHistory, type Message } from './components/ChatHistory';
@@ -10,6 +10,7 @@ import { ScenarioSelector } from './components/ScenarioSelector';
 import { DocumentPanel } from './components/DocumentPanel';
 import { DocumentViewer } from './components/DocumentViewer';
 import { ResizableDivider } from './components/ResizableDivider';
+import { InterviewProgress } from './components/InterviewProgress';
 import { VoiceState } from './services/voice/VoiceStateMachine';
 import type { ScenarioConfig } from './types/scenario';
 import './App.css';
@@ -25,16 +26,112 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(350);
   const lastMsgIdRef = useRef<string | null>(null);
 
-  const chatProvider = useMemo(() => {
-    if (!config.apiKey) return undefined;
-    return new DashScopeChatProvider(config.apiKey, config.llmModel, config.systemPrompt);
-  }, [config.apiKey, config.llmModel, config.systemPrompt]);
-
   // 采访引擎（当选择了场景时启用）
+  const activeScenario = useMemo(() => {
+    if (!selectedScenario) return null;
+    const prompts = config.scenarioPrompts;
+    if (!prompts) return selectedScenario;
+
+    if (selectedScenario.id === 'ai-interview') {
+      return {
+        ...selectedScenario,
+        interviewPrompt: prompts.interviewPrompt || selectedScenario.interviewPrompt,
+        outputs: selectedScenario.outputs.map((output) => {
+          if (output.id === 'prd' && prompts.prdPrompt) {
+            return { ...output, generatorPrompt: prompts.prdPrompt };
+          }
+          if (output.id === 'user-persona' && prompts.personaPrompt) {
+            return { ...output, generatorPrompt: prompts.personaPrompt };
+          }
+          return output;
+        }),
+      };
+    }
+
+    if (selectedScenario.id === 'ai-daily-reflection') {
+      return {
+        ...selectedScenario,
+        interviewPrompt: prompts.reflectionPrompt || selectedScenario.interviewPrompt,
+        outputs: selectedScenario.outputs.map((output) => {
+          if (output.id === 'daily-reflection-report' && prompts.reflectionReportPrompt) {
+            return { ...output, generatorPrompt: prompts.reflectionReportPrompt };
+          }
+          return output;
+        }),
+      };
+    }
+
+    return selectedScenario;
+  }, [config.scenarioPrompts, selectedScenario]);
+
+  const interviewSystemPrompt = activeScenario?.interviewPrompt || config.systemPrompt;
+
+  const interviewChatProvider = useMemo(
+    () => createChatProvider({
+      provider: config.interviewProvider,
+      model: config.interviewModel,
+      systemPrompt: interviewSystemPrompt,
+      claudeApiKey: config.claudeApiKey,
+      dashscopeApiKey: config.dashscopeApiKey,
+    }),
+    [
+      config.interviewProvider,
+      config.interviewModel,
+      config.claudeApiKey,
+      config.dashscopeApiKey,
+      interviewSystemPrompt,
+    ],
+  );
+
+  const prdChatProvider = useMemo(
+    () => createChatProvider({
+      provider: config.prdProvider,
+      model: config.prdModel,
+      systemPrompt: config.systemPrompt,
+      claudeApiKey: config.claudeApiKey,
+      dashscopeApiKey: config.dashscopeApiKey,
+    }),
+    [
+      config.prdProvider,
+      config.prdModel,
+      config.systemPrompt,
+      config.claudeApiKey,
+      config.dashscopeApiKey,
+    ],
+  );
+
+  const personaChatProvider = useMemo(
+    () => createChatProvider({
+      provider: config.personaProvider,
+      model: config.personaModel,
+      systemPrompt: config.systemPrompt,
+      claudeApiKey: config.claudeApiKey,
+      dashscopeApiKey: config.dashscopeApiKey,
+    }),
+    [
+      config.personaProvider,
+      config.personaModel,
+      config.systemPrompt,
+      config.claudeApiKey,
+      config.dashscopeApiKey,
+    ],
+  );
+
+  const hasInterviewProvider = Boolean(interviewChatProvider);
+  const canGenerateDocs = Boolean(prdChatProvider && personaChatProvider);
+
   const interview = useInterview(
-    selectedScenario && chatProvider
-      ? { scenario: selectedScenario, chatProvider }
-      : { scenario: { id: '', name: '', interviewPrompt: '', stages: [], outputs: [] }, chatProvider: chatProvider! }
+    activeScenario
+      ? {
+        scenario: activeScenario,
+        chatProvider: interviewChatProvider,
+        getDocumentChatProvider: (outputId: string) => {
+          if (outputId === 'prd') return prdChatProvider;
+          if (outputId === 'user-persona') return personaChatProvider;
+          return interviewChatProvider;
+        },
+      }
+      : { scenario: { id: '', name: '', interviewPrompt: '', stages: [], outputs: [] }, chatProvider: interviewChatProvider },
   );
 
   const addMessage = useCallback((role: 'user' | 'assistant', content: string) => {
@@ -52,19 +149,19 @@ function App() {
   }, []);
 
   const chat = useRealtimeVoiceChat({
-    apiKey: config.apiKey,
+    apiKey: config.dashscopeApiKey,
     voiceId: config.voiceId,
     voiceDisturbEnabled: config.voiceDisturbEnabled,
-    chatProvider,
+    chatProvider: interviewChatProvider,
     messageCallbacks: {
       onUserMessage: (text) => {
         addMessage('user', text);
-        if (selectedScenario) interview.addUserMessage(text);
+        if (activeScenario) interview.addUserMessage(text);
       },
       onAssistantMessage: (text, isFirst) => {
         if (isFirst) {
           addMessage('assistant', text);
-          if (selectedScenario) interview.addAssistantMessage(text);
+          if (activeScenario) interview.addAssistantMessage(text);
         } else {
           updateLastMessage(text);
         }
@@ -78,6 +175,9 @@ function App() {
           }
           return prev;
         });
+        if (activeScenario) {
+          interview.updateUserMessage(text);
+        }
       },
     },
     uiCallbacks: { onAlert: (msg) => alert(msg) },
@@ -111,18 +211,26 @@ function App() {
   };
 
   // 开始采访
-  const handleStartInterview = useCallback(() => {
-    if (!selectedScenario) return;
+  const handleStartInterview = useCallback(async () => {
+    if (!activeScenario) return;
     setMessages([]);
     interview.reset();
     interview.start();
     setIsInterviewing(true);
     // AI 主动发起对话，同时打开麦克风
-    setTimeout(() => {
-      chat.sendTextMessage('你好，我想做一个产品');
-      chat.startListening();
-    }, 500);
-  }, [selectedScenario, interview, chat]);
+    const startPrompt = activeScenario.id === 'ai-daily-reflection'
+      ? '请直接开始今天的复盘，并提出第一个问题。'
+      : '请直接开始采访，并提出第一个问题。';
+    setTimeout(async () => {
+      try {
+        await chat.sendTextMessage(startPrompt, true);
+      } finally {
+        if (config.dashscopeApiKey) {
+          chat.startListening();
+        }
+      }
+    }, 300);
+  }, [activeScenario, interview, chat, config.dashscopeApiKey]);
 
   // 结束采访
   const handleStopInterview = useCallback(() => {
@@ -133,14 +241,14 @@ function App() {
   }, [interview, chat]);
 
   useEffect(() => {
-    if (!config.apiKey) setShowSettings(true);
-  }, [config.apiKey]);
+    if (!hasInterviewProvider) setShowSettings(true);
+  }, [hasInterviewProvider]);
 
   return (
     <div className="app">
       <div className="main-area">
         <header>
-          <h1>语音对话 Demo</h1>
+          <h1>AI 访谈</h1>
           <div className="header-actions">
             <ScenarioSelector
               selectedId={selectedScenario?.id || null}
@@ -148,6 +256,7 @@ function App() {
                 setSelectedScenario(s);
                 interview.start();
               }}
+              disabled={isInterviewing}
             />
             <button className="settings-btn" onClick={() => setShowSettings(true)}>设置</button>
           </div>
@@ -187,18 +296,30 @@ function App() {
             <div className="status">状态: {getStateText()} {isInterviewing && '| 采访进行中'}</div>
             <div className="buttons">
               {selectedScenario && !isInterviewing && (
-                <button onClick={handleStartInterview} disabled={!config.apiKey}>开始采访</button>
+                <button onClick={handleStartInterview} disabled={!hasInterviewProvider}>开始采访</button>
               )}
               {isInterviewing && (
                 <button onClick={handleStopInterview} className="stop-btn">结束采访</button>
               )}
-              <button onClick={chat.startListening} disabled={chat.voiceState !== VoiceState.IDLE || !config.apiKey || !isInterviewing}>开始语音</button>
+              <button
+                onClick={chat.startListening}
+                disabled={chat.voiceState !== VoiceState.IDLE || !config.dashscopeApiKey || !isInterviewing}
+              >
+                开始语音
+              </button>
               <button onClick={chat.stopListening} disabled={!isInterviewing}>停止语音</button>
             </div>
           </div>
           <div className="input-area">
-            <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={handleKeyDown} placeholder="输入文字消息..." disabled={!config.apiKey} />
-            <button onClick={handleSend} disabled={!config.apiKey || !inputText.trim()}>发送</button>
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入文字消息..."
+              disabled={!hasInterviewProvider}
+            />
+            <button onClick={handleSend} disabled={!hasInterviewProvider || !inputText.trim()}>发送</button>
           </div>
         </div>
       </div>
@@ -207,12 +328,19 @@ function App() {
         <ChatHistory messages={messages} />
         {selectedScenario && (
           <>
+            {selectedScenario.id === 'ai-interview' && (
+              <InterviewProgress
+                progress={interview.infoProgress}
+                isInterviewing={isInterviewing}
+              />
+            )}
             <DocumentPanel
               documents={interview.documents}
               isGenerating={interview.isGenerating}
               onGenerate={interview.generateDocuments}
               onViewDocuments={() => setShowDocumentViewer(true)}
-              disabled={isInterviewing}
+              disabled={isInterviewing || !canGenerateDocs}
+              disabledReason={!canGenerateDocs ? '请先配置文档模型' : isInterviewing ? '请先结束采访' : undefined}
             />
           </>
         )}
