@@ -12,6 +12,7 @@ import { DocumentViewer } from './components/DocumentViewer';
 import { ResizableDivider } from './components/ResizableDivider';
 import { InterviewProgress } from './components/InterviewProgress';
 import { VoiceState } from './services/voice/VoiceStateMachine';
+import { PROGRESS_EVALUATOR_SYSTEM_PROMPT } from './services/interview/ProgressEvaluator';
 import type { ScenarioConfig } from './types/scenario';
 import './App.css';
 
@@ -117,6 +118,22 @@ function App() {
     ],
   );
 
+  const createProgressChatProvider = useCallback(
+    () => createChatProvider({
+      provider: config.progressProvider,
+      model: config.progressModel,
+      systemPrompt: PROGRESS_EVALUATOR_SYSTEM_PROMPT,
+      claudeApiKey: config.claudeApiKey,
+      dashscopeApiKey: config.dashscopeApiKey,
+    }),
+    [
+      config.progressProvider,
+      config.progressModel,
+      config.claudeApiKey,
+      config.dashscopeApiKey,
+    ],
+  );
+
   const hasInterviewProvider = Boolean(interviewChatProvider);
   const canGenerateDocs = Boolean(prdChatProvider && personaChatProvider);
 
@@ -130,6 +147,8 @@ function App() {
           if (outputId === 'user-persona') return personaChatProvider;
           return interviewChatProvider;
         },
+        createProgressChatProvider,
+        progressEvaluationInterval: 6,
       }
       : { scenario: { id: '', name: '', interviewPrompt: '', stages: [], outputs: [] }, chatProvider: interviewChatProvider },
   );

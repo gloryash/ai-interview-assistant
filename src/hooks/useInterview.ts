@@ -6,11 +6,14 @@ import { InterviewEngine } from '../services/interview/InterviewEngine';
 import { InterviewStage } from '../services/interview/InterviewStateMachine';
 import { DocumentGenerator } from '../services/document/DocumentGenerator';
 import { ProgressTracker } from '../services/interview/ProgressTracker';
+import { evaluateProgressWithLLM } from '../services/interview/ProgressEvaluator';
 
 export interface UseInterviewConfig {
   scenario: ScenarioConfig;
   chatProvider?: ChatProvider;
   getDocumentChatProvider?: (outputId: string) => ChatProvider | undefined;
+  createProgressChatProvider?: () => ChatProvider | undefined;
+  progressEvaluationInterval?: number;
 }
 
 export interface GeneratingProgress {
@@ -46,6 +49,10 @@ export function useInterview(config: UseInterviewConfig): UseInterviewReturn {
   const engineRef = useRef<InterviewEngine | null>(null);
   const generatorRef = useRef<DocumentGenerator | null>(null);
   const progressTrackerRef = useRef<ProgressTracker | null>(null);
+  const progressEvalInFlightRef = useRef(false);
+  const progressEvalQueuedRef = useRef(false);
+  const progressEvalCountRef = useRef(0);
+  const progressEvalLastRunRef = useRef(0);
 
   // 初始化引擎
   const getEngine = useCallback(() => {
@@ -78,37 +85,70 @@ export function useInterview(config: UseInterviewConfig): UseInterviewReturn {
 
   const start = useCallback(() => {
     getEngine().start();
-    // 初始化进度（只有 ai-interview 场景才有进度追踪）
+    // 初始化进度（只有 ai-interview 场景才显示进度）
     if (config.scenario.id === 'ai-interview') {
       const tracker = getProgressTracker();
       setInfoProgress(tracker.getProgress());
     }
   }, [getEngine, getProgressTracker, config.scenario.id]);
 
+  const runProgressEvaluation = useCallback(async () => {
+    if (config.scenario.id !== 'ai-interview') return;
+    if (!config.createProgressChatProvider) return;
+    if (progressEvalInFlightRef.current) {
+      progressEvalQueuedRef.current = true;
+      return;
+    }
+    const tracker = getProgressTracker();
+    if (tracker.getProgress().percentage >= 100) return;
+
+    progressEvalInFlightRef.current = true;
+    try {
+      const engine = getEngine();
+      const collected = await evaluateProgressWithLLM(
+        engine.getTranscript(),
+        config.createProgressChatProvider,
+      );
+      if (collected && collected.length > 0) {
+        collected.forEach((id) => tracker.markCollected(id));
+        setInfoProgress(tracker.getProgress());
+      }
+    } catch (error) {
+      console.error('Progress evaluation failed', error);
+    } finally {
+      progressEvalInFlightRef.current = false;
+      if (progressEvalQueuedRef.current) {
+        progressEvalQueuedRef.current = false;
+        void runProgressEvaluation();
+      }
+    }
+  }, [config.scenario.id, config.createProgressChatProvider, getEngine, getProgressTracker]);
+
+  const maybeRunProgressEvaluation = useCallback(() => {
+    const interval = config.progressEvaluationInterval || 0;
+    if (config.scenario.id !== 'ai-interview' || interval <= 0) return;
+
+    progressEvalCountRef.current += 1;
+    const shouldRun = progressEvalCountRef.current - progressEvalLastRunRef.current >= interval;
+    if (shouldRun) {
+      progressEvalLastRunRef.current = progressEvalCountRef.current;
+      void runProgressEvaluation();
+    }
+  }, [config.scenario.id, config.progressEvaluationInterval, runProgressEvaluation]);
+
   const addUserMessage = useCallback((content: string) => {
     getEngine().addUserMessage(content);
-    // 只有 ai-interview 场景才更新进度
-    if (config.scenario.id === 'ai-interview') {
-      const engine = getEngine();
-      const tracker = getProgressTracker();
-      const progress = tracker.analyzeMessages(engine.getTranscript().messages);
-      setInfoProgress(progress);
-    }
-  }, [getEngine, getProgressTracker, config.scenario.id]);
+    maybeRunProgressEvaluation();
+  }, [getEngine, maybeRunProgressEvaluation]);
 
   const updateUserMessage = useCallback((content: string) => {
     getEngine().updateLastUserMessage(content);
-    if (config.scenario.id === 'ai-interview') {
-      const engine = getEngine();
-      const tracker = getProgressTracker();
-      const progress = tracker.analyzeMessages(engine.getTranscript().messages);
-      setInfoProgress(progress);
-    }
-  }, [getEngine, getProgressTracker, config.scenario.id]);
+  }, [getEngine]);
 
   const addAssistantMessage = useCallback((content: string) => {
     getEngine().addAssistantMessage(content);
-  }, [getEngine]);
+    maybeRunProgressEvaluation();
+  }, [getEngine, maybeRunProgressEvaluation]);
 
   const nextStage = useCallback(() => {
     getEngine().nextStage();
@@ -162,6 +202,10 @@ export function useInterview(config: UseInterviewConfig): UseInterviewReturn {
     getProgressTracker().reset();
     setDocuments([]);
     setInfoProgress({ items: [], percentage: 0 });
+    progressEvalInFlightRef.current = false;
+    progressEvalQueuedRef.current = false;
+    progressEvalCountRef.current = 0;
+    progressEvalLastRunRef.current = 0;
   }, [getEngine, getProgressTracker]);
 
   return {

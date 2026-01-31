@@ -9,9 +9,16 @@ export class ASRService {
 
   constructor(private onMessage: (message: ASRMessage) => void) {}
 
-  init(workerPath = '/workers/asrWorker.js') {
+  init(workerPath?: string) {
     if (this.worker) return;
-    this.worker = new Worker(workerPath);
+    const origin = typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost';
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    const resolvedPath = workerPath
+      || new URL(`${normalizedBase}workers/asrWorker.js`, origin).toString();
+    this.worker = new Worker(resolvedPath);
     this.worker.onmessage = (event) => {
       this.onMessage(event.data as ASRMessage);
     };

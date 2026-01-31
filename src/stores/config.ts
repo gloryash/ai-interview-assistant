@@ -17,6 +17,9 @@ export interface AppConfig {
   // 用户画像 Agent LLM 配置
   personaProvider: LLMProvider;
   personaModel: string;
+  // 进度判定 Agent LLM 配置
+  progressProvider: LLMProvider;
+  progressModel: string;
   // TTS 语音 ID
   voiceId: string;
   // 系统人设
@@ -48,6 +51,8 @@ const DEFAULT_CONFIG: AppConfig = {
   prdModel: DEFAULT_CLAUDE_MODEL,
   personaProvider: DEFAULT_PROVIDER,
   personaModel: DEFAULT_CLAUDE_MODEL,
+  progressProvider: DEFAULT_PROVIDER,
+  progressModel: DEFAULT_CLAUDE_MODEL,
   voiceId: 'longxiaochun',
   systemPrompt: '你是一个友好的AI助手，请用简洁的语言回答用户的问题。',
   voiceDisturbEnabled: true,

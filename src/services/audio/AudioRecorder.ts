@@ -2,6 +2,16 @@ export class AudioRecorder {
   private audioContext: AudioContext | null = null;
   private workletNode: AudioWorkletNode | null = null;
   private stream: MediaStream | null = null;
+  private workletPath = this.resolveWorkletPath();
+
+  private resolveWorkletPath() {
+    const origin = typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost';
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    return new URL(`${normalizedBase}workers/audioProcessor.js`, origin).toString();
+  }
 
   async start(onAudioData: (data: Int16Array) => void): Promise<void> {
     this.stream = await navigator.mediaDevices.getUserMedia({
@@ -13,7 +23,7 @@ export class AudioRecorder {
     });
     this.audioContext = new AudioContext({ sampleRate: 16000 });
 
-    await this.audioContext.audioWorklet.addModule('/workers/audioProcessor.js');
+    await this.audioContext.audioWorklet.addModule(this.workletPath);
 
     const source = this.audioContext.createMediaStreamSource(this.stream);
     this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');

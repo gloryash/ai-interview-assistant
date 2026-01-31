@@ -280,6 +280,41 @@ export function SettingsPanel({ config, onSave, onClose }: SettingsPanelProps) {
             </div>
           </div>
 
+          <div className="agent-section">
+            <div className="agent-title">进度判定 Agent</div>
+            <div className="agent-row">
+              <div className="form-group">
+                <label>提供商</label>
+                <select
+                  value={form.progressProvider}
+                  onChange={(e) => {
+                    const provider = e.target.value as LLMProvider;
+                    setForm({
+                      ...form,
+                      progressProvider: provider,
+                      progressModel: normalizeModel(provider, form.progressModel),
+                    });
+                  }}
+                >
+                  {PROVIDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>模型</label>
+                <select
+                  value={form.progressModel}
+                  onChange={(e) => setForm({ ...form, progressModel: e.target.value })}
+                >
+                  {getModelOptions(form.progressProvider, form.progressModel).map((model) => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="form-group">
             <label>TTS 语音</label>
             <div className="tts-row">
