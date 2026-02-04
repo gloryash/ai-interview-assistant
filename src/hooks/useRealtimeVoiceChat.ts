@@ -125,7 +125,12 @@ export function useRealtimeVoiceChat(config: RealtimeVoiceChatConfig) {
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           console.error('Chat stream error', error);
+          // LLM 请求失败，显示错误提示
+          messageCallbacks?.onAssistantMessage?.('[网络错误，请重试]', true);
         }
+        // 只在出错时关闭 TTS 并恢复用户说话能力
+        tts.close().catch(() => {});
+        setPauseNewRecordingRef.current?.(false);
       } finally {
         setSending(false);
       }
