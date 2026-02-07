@@ -15,6 +15,11 @@ export default {
       return handleWebSocketProxy(request, url);
     }
 
+    // Claude API 代理：/claude/*
+    if (url.pathname.startsWith('/claude/')) {
+      return handleClaudeProxy(request, url);
+    }
+
     // 其他请求：交给静态资源处理
     return env.ASSETS.fetch(request);
   },
@@ -71,4 +76,36 @@ async function handleWebSocketProxy(request: Request, url: URL): Promise<Respons
   });
 
   return new Response(null, { status: 101, webSocket: clientWs });
+}
+
+async function handleClaudeProxy(request: Request, url: URL): Promise<Response> {
+  // CORS 预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
+
+  // 转发到 Claude API
+  const targetPath = url.pathname.replace(/^\/claude/, '');
+  const targetUrl = `https://code.newcli.com/claude/droid${targetPath}${url.search}`;
+
+  const headers = new Headers(request.headers);
+  headers.delete('host');
+
+  const resp = await fetch(targetUrl, {
+    method: request.method,
+    headers,
+    body: request.body,
+  });
+
+  // 复制响应并添加 CORS 头
+  const newResp = new Response(resp.body, resp);
+  newResp.headers.set('Access-Control-Allow-Origin', '*');
+  return newResp;
 }
