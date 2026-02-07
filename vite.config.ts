@@ -13,6 +13,23 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/claude/, ''),
       },
+      '/dashscope-ws': {
+        target: 'https://dashscope.aliyuncs.com',
+        ws: true,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/dashscope-ws/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReqWs', (proxyReq, req) => {
+            // 从 URL query 中提取 api_key，转为 Authorization header
+            const url = new URL(req.url!, 'http://localhost');
+            const apiKey = url.searchParams.get('api_key');
+            if (apiKey) {
+              proxyReq.setHeader('Authorization', `bearer ${apiKey}`);
+            }
+          });
+        },
+      },
     },
   },
 });

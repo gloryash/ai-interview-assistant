@@ -16,7 +16,8 @@ export class CosyVoiceTTS implements ITTSService {
   ) {}
 
   private get wssUrl() {
-    return `wss://dashscope.aliyuncs.com/api-ws/v1/inference/?api_key=${this.apiKey}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}/dashscope-ws/api-ws/v1/inference/?api_key=${this.apiKey}`;
   }
 
   connect(onAudioData: (pcmData: ArrayBuffer) => void, onTaskFinished: () => void) {
