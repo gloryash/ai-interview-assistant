@@ -1,7 +1,9 @@
 {
   "name": "ai-interview-assistant",
   "compatibility_date": "2026-02-05",
+  "main": "./worker.ts",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS"
   }
 }
